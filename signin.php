@@ -1,4 +1,10 @@
+<?php
 
+session_start();
+if(isset($_SESSION['username'])){
+    header("location:index.php");
+}
+?>
 <!doctype html>
 
 <html lang="en"> 
@@ -41,7 +47,12 @@ if(isset($_POST["email"]) && isset($_POST['password'])){
             }
             else
             {
-                echo 'Logged In Successfully';
+                // echo $row['username'];
+                $_SESSION['username'] = $row['username']; // Assuming username column exists
+                $_SESSION["user_id"] = $row['id'];
+                 // echo $_SESSION['username'];
+                header("location: index.php");
+                // exit();
             }
 
         }else{
