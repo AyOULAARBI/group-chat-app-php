@@ -1,8 +1,38 @@
 <?php
 session_start();
-if(isset($_SESSION['username'])){
 
+if (!isset($_SESSION['username'])) {
+  header("location:signin.php");
+  exit; // Exit script if not logged in
+}
+require_once("db.php"); // Include database connection (use require_once for single inclusion)
+
+$sql = "SELECT m.*, u.username AS username FROM messages m
+        INNER JOIN users u ON m.sender_id = u.id
+        ORDER BY m.timestamp ASC"; // Prepared statement for security
+
+$stmt = mysqli_prepare($conn, $sql);
+
+// mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']); // Bind user ID
+
+$stmt->execute();
+
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+  $messages = [];
+  while ($row = $result->fetch_assoc()) {
+    $messages[] = $row;
+  }
+} else {
+  $messages = []; // Empty array if no messages found
+}
+
+$stmt->close(); // Close prepared statement
+
+mysqli_close($conn); // Close database connection
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +47,18 @@ if(isset($_SESSION['username'])){
         <div class="chat-box">
             <h3 class="welcome">Welcome <span><?=$_SESSION['username']?></span></h3>
             <div class="messages">
+            <?php foreach ($messages as $message): ?>
+                <div class="message <?php echo ($message['sender_id'] == $_SESSION['user_id']) ? 'sender' : ''; ?>">
+                    <div class="message-user"><?=$message['username']?></div>
+                    <div class="message-content"><?=$message['message']?></div>
+                    <div class="message-time"><?=date("h:i A", strtotime($message['timestamp']))?></div>
+                </div>
+            <?php endforeach; ?>
+                <!-- <div class="message sender">
+                    <div class="message-user">Username</div>
+                    <div class="message-content">This is the message content.</div>
+                    <div class="message-time">10:20 PM</div>
+                </div>
                 <div class="message">
                     <div class="message-user">Username</div>
                     <div class="message-content">This is the message content.</div>
@@ -27,21 +69,11 @@ if(isset($_SESSION['username'])){
                     <div class="message-content">This is the message content.</div>
                     <div class="message-time">10:20 PM</div>
                 </div>
-                <div class="message">
-                    <div class="message-user">Username</div>
-                    <div class="message-content">This is the message content.</div>
-                    <div class="message-time">10:20 PM</div>
-                </div>
                 <div class="message sender">
                     <div class="message-user">Username</div>
                     <div class="message-content">This is the message content.</div>
                     <div class="message-time">10:20 PM</div>
-                </div>
-                <div class="message sender">
-                    <div class="message-user">Username</div>
-                    <div class="message-content">This is the message content.</div>
-                    <div class="message-time">10:20 PM</div>
-                </div>
+                </div> -->
             </div>
             <div class="form">
             <input id="sender_id" value="<?=$_SESSION['user_id']?>" hidden>
@@ -70,8 +102,3 @@ if(isset($_SESSION['username'])){
     </script>
 </body>
 </html>
-<?php
-}else{
-    header("location:signin.php");
-}
-?>
